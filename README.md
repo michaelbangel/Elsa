@@ -99,8 +99,3 @@ This layer recalculates risk after “closure.”
 
 Built using:
 R (core language)
-Functional programming design
-Modular architecture (engine-based design)
-Rule-based scoring systems
-Weighted composite risk models
-Deterministic escalation logic
