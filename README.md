@@ -1,4 +1,3 @@
-#Helps operates understand cause of vairiance 
 
 MJ23R2 is an R-based financial analytics framework designed to convert financial reporting data and operational signals into structured governance risk indicators.
 The system evaluates:
