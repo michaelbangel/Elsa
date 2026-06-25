@@ -23,27 +23,6 @@ MJ23R2 generates interpretable risk indicators to support audit, compliance, and
 
 
 MJ23R2 operates by implementing a layered analytical risk architecture:
-Financial Data
-   ↓
-Variance & Incidence Detection
-   ↓
-Operational Risk Analysis
-   ↓
-Settlement Intelligence Layer
-   ↓
-Litigation Exposure Signals
-   ↓
-Escalation Logic (Triggers)
-   ↓
-Fraud Risk Indicator
-   ↓
-Financial Integrity Index (FII)
-   ↓
-Governance Prioritization
-   ↓
-Post-Settlement Re-Exposure Monitoring
-
-Each layer builds structured intelligence from raw financial inputs.
 
 Core Modules
 
