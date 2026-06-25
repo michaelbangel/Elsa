@@ -1,6 +1,5 @@
 # MJ23R2
-# MJ23R2 Financial Risk Analytics Framework
-
+# MJ23R2 Helps operates understand cause of vairiance between reported income and expense and verified income and expenses during debt settlement valauation
 ## Overview
 
 MJ23R2 is an R-based financial analytics framework designed to convert financial reporting data and operational signals into structured governance risk indicators.
