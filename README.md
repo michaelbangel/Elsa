@@ -1,5 +1,5 @@
 
-MJ23R2 is an R-based financial analytics framework designed to convert financial reporting data and operational signals into structured governance risk indicators.
+beyond integrety is an R-based financial analytics framework designed to convert financial reporting data and operational signals into structured governance risk indicators.
 The system evaluates:
 
 Variance between reported and verified financial data
