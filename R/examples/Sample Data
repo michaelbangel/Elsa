@@ -1,0 +1,56 @@
+{
+  "product": "MJ Debt Portfolio Valuation",
+  "technical_designation": "MJ.23.R2",
+  "investigation_id": "MJ-DEMO-001",
+  "investigation_level": "portfolio_segment",
+  "foundational_signals": {
+    "income_variance": 20.0,
+    "expense_variance": 41.67,
+    "general_variance": 41.67,
+    "incidence": 38.0,
+    "consistency": 62.0,
+    "trend": 12.0,
+    "variance_acceleration": 2.0,
+    "incidence_momentum": 17.0,
+    "early_warning_4pct": 100
+  },
+  "structural_intelligence": {
+    "source_of_variance_score": 33.9,
+    "liability_score": 66.1,
+    "reporting_integrity_score": 66.8,
+    "reason_of_doubt_score": 43.97,
+    "negotiator_risk_score": 42.62,
+    "root_cause_pattern": "Operational Error Pattern"
+  },
+  "settlement_intelligence": {
+    "settlement_percentage": 90.0,
+    "settlement_achievement": 90.0,
+    "settlement_efficiency": 42.0,
+    "settlement_risk": 46.0,
+    "settlement_variance_trigger": 100
+  },
+  "escalation_intelligence": {
+    "legal_action": 1,
+    "litigation_risk": 41.68,
+    "double_trigger_multiplier": 1.25,
+    "triple_trigger_multiplier": 1.0,
+    "active_trigger_multiplier": 1.5,
+    "fraud_risk_indicator": 67.38
+  },
+  "post_settlement_intelligence": {
+    "broken_settlement": true,
+    "broken_settlement_score": 100,
+    "income_variance": 20.0,
+    "expense_variance": 41.67,
+    "escalation_multiplier": 1.5
+  },
+  "governance": {
+    "financial_integrity_index": 41.52,
+    "priority": "High Priority"
+  },
+  "interpretation": {
+    "evidence_status": "Controlled prototype output",
+    "primary_finding": "The portfolio segment contains a material reported-versus-verified financial variance pattern requiring further valuation review.",
+    "caution": "This result is an investigative indicator. It does not establish fraud, legal liability, or guaranteed recoverable portfolio value."
+  }
+}
