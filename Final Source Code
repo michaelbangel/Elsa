@@ -1,0 +1,384 @@
+#   MJ.23.R2 Purpose:
+#   Investigate reporting variance, settlement valuation exposure,
+#   governance risk, and post-settlement re-exposure within debt portfolios.
+#
+# Important:
+#   This is a controlled prototype and decision-support framework.
+#   It does not establish fraud, legal liability, or guaranteed recoverable value.
+
+assert_numeric_scalar <- function(x, name, allow_na = FALSE) {
+  if (!is.numeric(x) || length(x) != 1L) stop(sprintf("%s must be a numeric scalar.", name), call. = FALSE)
+  if (!allow_na && is.na(x)) stop(sprintf("%s cannot be NA.", name), call. = FALSE)
+  invisible(TRUE)
+}
+
+assert_nonnegative <- function(x, name) {
+  assert_numeric_scalar(x, name)
+  if (x < 0) stop(sprintf("%s must be non-negative.", name), call. = FALSE)
+  invisible(TRUE)
+}
+
+assert_pct <- function(x, name) {
+  assert_numeric_scalar(x, name)
+  if (x < 0 || x > 100) stop(sprintf("%s must be between 0 and 100.", name), call. = FALSE)
+  invisible(TRUE)
+}
+
+assert_flag <- function(x, name) {
+  if (!is.logical(x) || length(x) != 1L || is.na(x)) stop(sprintf("%s must be TRUE or FALSE.", name), call. = FALSE)
+  invisible(TRUE)
+}
+
+cap_100 <- function(x) pmin(pmax(x, 0), 100)
+
+variance_engine <- function(reported, verified) {
+  assert_nonnegative(reported, "reported")
+  assert_nonnegative(verified, "verified")
+  if (verified <= 0) return(0)
+  abs((reported - verified) / verified) * 100
+}
+
+incidence_engine <- function(incorrect, total) {
+  assert_nonnegative(incorrect, "incorrect")
+  assert_nonnegative(total, "total")
+  if (total <= 0) return(0)
+  cap_100((incorrect / total) * 100)
+}
+
+consistency_engine <- function(successful, total) {
+  assert_nonnegative(successful, "successful")
+  assert_nonnegative(total, "total")
+  if (total <= 0) return(100)
+  cap_100((successful / total) * 100)
+}
+
+trend_engine <- function(current, previous) {
+  assert_numeric_scalar(current, "current")
+  assert_numeric_scalar(previous, "previous")
+  cap_100(abs(current - previous))
+}
+
+trigger_4pct <- function(variance) {
+  assert_nonnegative(variance, "variance")
+  ifelse(variance >= 4, 100, 0)
+}
+
+variance_predictor <- function(variance, trend, incidence, consistency) {
+  assert_nonnegative(variance, "variance")
+  assert_nonnegative(trend, "trend")
+  assert_pct(incidence, "incidence")
+  assert_pct(consistency, "consistency")
+  cap_100(variance * 0.30 + trend * 0.20 + incidence * 0.30 + (100 - consistency) * 0.20)
+}
+
+variance_acceleration <- function(v1, v2, v3) {
+  assert_numeric_scalar(v1, "v1")
+  assert_numeric_scalar(v2, "v2")
+  assert_numeric_scalar(v3, "v3")
+  abs((v3 - v2) - (v2 - v1))
+}
+
+incidence_momentum <- function(i1, i2) {
+  assert_numeric_scalar(i1, "i1")
+  assert_numeric_scalar(i2, "i2")
+  abs(i2 - i1)
+}
+
+liability_engine <- function(accuracy, compliance, incidence, remediation) {
+  assert_pct(accuracy, "accuracy")
+  assert_pct(compliance, "compliance")
+  assert_pct(incidence, "incidence")
+  assert_pct(remediation, "remediation")
+  cap_100(accuracy * 0.35 + compliance * 0.25 + (100 - incidence) * 0.30 + remediation * 0.10)
+}
+
+integrity_engine <- function(accuracy, consistency, compliance, incidence) {
+  assert_pct(accuracy, "accuracy")
+  assert_pct(consistency, "consistency")
+  assert_pct(compliance, "compliance")
+  assert_pct(incidence, "incidence")
+  cap_100(accuracy * 0.30 + consistency * 0.25 + compliance * 0.25 + (100 - incidence) * 0.20)
+}
+
+doubt_engine <- function(variance, delay, incidence, deviation) {
+  assert_nonnegative(variance, "variance")
+  assert_pct(delay, "delay")
+  assert_pct(incidence, "incidence")
+  assert_pct(deviation, "deviation")
+  cap_100(variance * 0.25 + delay * 0.15 + incidence * 0.40 + deviation * 0.20)
+}
+
+negotiator_risk <- function(incidence, variance, exception, accuracy) {
+  assert_pct(incidence, "incidence")
+  assert_nonnegative(variance, "variance")
+  assert_pct(exception, "exception")
+  assert_pct(accuracy, "accuracy")
+  cap_100(incidence * 0.40 + variance * 0.25 + exception * 0.20 + (100 - accuracy) * 0.15)
+}
+
+root_cause <- function(variance, incidence, exception) {
+  assert_nonnegative(variance, "variance")
+  assert_pct(incidence, "incidence")
+  assert_pct(exception, "exception")
+  if (variance > 60 && incidence > 60) return("Manipulation Risk Pattern")
+  if (exception > 70) return("System Integrity Failure")
+  if (incidence > 50) return("Process Control Failure")
+  "Operational Error Pattern"
+}
+
+settlement_pct <- function(original, settlement) {
+  assert_nonnegative(original, "original")
+  assert_nonnegative(settlement, "settlement")
+  if (original <= 0) return(0)
+  cap_100(((original - settlement) / original) * 100)
+}
+
+settlement_achievement <- function(original, settlement) settlement_pct(original, settlement)
+
+settlement_efficiency <- function(settled, flagged) {
+  assert_nonnegative(settled, "settled")
+  assert_nonnegative(flagged, "flagged")
+  if (flagged <= 0) return(100)
+  cap_100((settled / flagged) * 100)
+}
+
+settlement_risk <- function(efficiency, achievement, backlog) {
+  assert_pct(efficiency, "efficiency")
+  assert_pct(achievement, "achievement")
+  assert_pct(backlog, "backlog")
+  cap_100((100 - efficiency) * 0.40 + backlog * 0.35 + (100 - achievement) * 0.25)
+}
+
+settlement_trigger <- function(settled, variance) {
+  assert_flag(settled, "settled")
+  assert_nonnegative(variance, "variance")
+  if (settled && variance > 0) 100 else 0
+}
+
+legal_action <- function(flag) {
+  assert_flag(flag, "flag")
+  ifelse(flag, 1, 0)
+}
+
+litigation_risk <- function(legal, variance, incidence, settlement) {
+  assert_flag(legal, "legal")
+  assert_nonnegative(variance, "variance")
+  assert_pct(incidence, "incidence")
+  assert_pct(settlement, "settlement")
+  if (!legal) return(0)
+  cap_100(variance * 0.35 + incidence * 0.35 + settlement * 0.30)
+}
+
+double_trigger <- function(variance, incidence, settlement, legal) {
+  assert_nonnegative(variance, "variance")
+  assert_pct(incidence, "incidence")
+  assert_flag(settlement, "settlement")
+  assert_flag(legal, "legal")
+  if ((variance >= 60 && incidence >= 60) || (settlement && variance >= 20) || (legal && (variance >= 50 || incidence >= 50))) return(1.25)
+  1.0
+}
+
+triple_trigger <- function(variance, incidence, legal) {
+  assert_nonnegative(variance, "variance")
+  assert_pct(incidence, "incidence")
+  assert_flag(legal, "legal")
+  if (variance >= 60 && incidence >= 60 && legal) 1.5 else 1.0
+}
+
+fraud_risk_indicator <- function(variance, incidence, exception, trigger_multiplier) {
+  assert_nonnegative(variance, "variance")
+  assert_pct(incidence, "incidence")
+  assert_pct(exception, "exception")
+  assert_numeric_scalar(trigger_multiplier, "trigger_multiplier")
+  if (!trigger_multiplier %in% c(1.0, 1.25, 1.5)) stop("trigger_multiplier must be 1.0, 1.25, or 1.5.", call. = FALSE)
+  base_score <- (variance * 0.35 + incidence * 0.30 + exception * 0.20) / 0.85
+  cap_100(base_score * trigger_multiplier)
+}
+
+broken_settlement_engine <- function(settlement_closed, reopened, dispute, legal_reversal) {
+  assert_flag(settlement_closed, "settlement_closed")
+  assert_flag(reopened, "reopened")
+  assert_flag(dispute, "dispute")
+  assert_flag(legal_reversal, "legal_reversal")
+  settlement_closed && (reopened || dispute || legal_reversal)
+}
+
+post_settlement_income_variance <- function(reported, verified, broken) {
+  assert_flag(broken, "broken")
+  if (!broken) return(0)
+  variance_engine(reported, verified)
+}
+
+post_settlement_expense_variance <- function(reported, verified, broken) {
+  assert_flag(broken, "broken")
+  if (!broken) return(0)
+  variance_engine(reported, verified)
+}
+
+broken_settlement_trigger <- function(broken, income_var, expense_var, variance, incidence) {
+  assert_flag(broken, "broken")
+  assert_nonnegative(income_var, "income_var")
+  assert_nonnegative(expense_var, "expense_var")
+  assert_nonnegative(variance, "variance")
+  assert_pct(incidence, "incidence")
+  if (broken && (income_var > 10 || expense_var > 10 || variance > 10 || incidence > 30)) return(1.5)
+  if (broken) return(1.25)
+  1.0
+}
+
+fii_engine <- function(variance, liability, doubt, negotiator, settlement) {
+  assert_nonnegative(variance, "variance")
+  assert_pct(liability, "liability")
+  assert_pct(doubt, "doubt")
+  assert_pct(negotiator, "negotiator")
+  assert_pct(settlement, "settlement")
+  cap_100(variance * 0.25 + (100 - liability) * 0.20 + doubt * 0.15 + negotiator * 0.20 + settlement * 0.20)
+}
+
+priority_engine <- function(fraud, fii, legal) {
+  assert_pct(fraud, "fraud")
+  assert_pct(fii, "fii")
+  assert_flag(legal, "legal")
+  if (legal && (fraud >= 80 || fii >= 80)) return("Critical Priority")
+  if (legal && (fraud >= 60 || fii >= 60)) return("High Priority")
+  if (legal) return("Elevated")
+  "Standard"
+}
+
+validate_mj_input <- function(input) {
+  required_top <- c("investigation_id", "investigation_level", "reporting", "trends", "controls", "settlement", "legal", "post_settlement")
+  missing_top <- setdiff(required_top, names(input))
+  if (length(missing_top) > 0L) stop(sprintf("Missing top-level input fields: %s", paste(missing_top, collapse = ", ")), call. = FALSE)
+  invisible(TRUE)
+}
+
+mj23r2_run <- function(input) {
+  validate_mj_input(input)
+
+  r <- input$reporting; t <- input$trends; c <- input$controls
+  s <- input$settlement; l <- input$legal; p <- input$post_settlement
+
+  income_variance <- variance_engine(r$reported_income, r$verified_income)
+  expense_variance <- variance_engine(r$reported_expenses, r$verified_expenses)
+  general_variance <- max(income_variance, expense_variance)
+  incidence <- incidence_engine(r$incorrect_submissions, r$total_submissions)
+  consistency <- consistency_engine(r$successful_submissions, r$total_submissions)
+  trend <- trend_engine(t$current_variance, t$previous_variance)
+  acceleration <- variance_acceleration(t$variance_period_1, t$variance_period_2, t$variance_period_3)
+  momentum <- incidence_momentum(t$previous_incidence, t$current_incidence)
+  source_variance <- variance_predictor(general_variance, trend, incidence, consistency)
+  liability <- liability_engine(c$accuracy_score, c$compliance_score, incidence, c$remediation_score)
+  integrity <- integrity_engine(c$accuracy_score, consistency, c$compliance_score, incidence)
+  doubt <- doubt_engine(general_variance, c$delay_score, incidence, c$deviation_score)
+  negotiator <- negotiator_risk(incidence, general_variance, c$exception_score, c$accuracy_score)
+  cause <- root_cause(general_variance, incidence, c$exception_score)
+  settlement_percentage <- settlement_pct(s$original_debt, s$settlement_amount)
+  achievement <- settlement_achievement(s$original_debt, s$settlement_amount)
+  efficiency <- settlement_efficiency(s$settled_cases, s$flagged_cases)
+  settlement_risk_score <- settlement_risk(efficiency, achievement, s$settlement_backlog_score)
+  settlement_variance_trigger <- settlement_trigger(s$settlement_closed, general_variance)
+  legal_exists <- isTRUE(l$legal_action_exists)
+  litigation <- litigation_risk(legal_exists, general_variance, incidence, settlement_risk_score)
+  double_multiplier <- double_trigger(general_variance, incidence, settlement_variance_trigger > 0, legal_exists)
+  triple_multiplier <- triple_trigger(general_variance, incidence, legal_exists)
+  broken <- broken_settlement_engine(s$settlement_closed, l$reopened, l$disputed, l$legal_reversal)
+  post_income_variance <- post_settlement_income_variance(p$reported_income, p$verified_income, broken)
+  post_expense_variance <- post_settlement_expense_variance(p$reported_expenses, p$verified_expenses, broken)
+  broken_multiplier <- broken_settlement_trigger(broken, post_income_variance, post_expense_variance, general_variance, incidence)
+  active_multiplier <- max(double_multiplier, triple_multiplier, broken_multiplier)
+  fraud_risk <- fraud_risk_indicator(general_variance, incidence, c$exception_score, active_multiplier)
+  fii <- fii_engine(general_variance, liability, doubt, negotiator, settlement_risk_score)
+  priority <- priority_engine(fraud_risk, fii, legal_exists)
+
+  result <- list(
+    product = "MJ Debt Portfolio Valuation",
+    technical_designation = "MJ.23.R2",
+    investigation_id = input$investigation_id,
+    investigation_level = input$investigation_level,
+    foundational_signals = list(
+      income_variance = round(income_variance, 2), expense_variance = round(expense_variance, 2),
+      general_variance = round(general_variance, 2), incidence = round(incidence, 2),
+      consistency = round(consistency, 2), trend = round(trend, 2),
+      variance_acceleration = round(acceleration, 2), incidence_momentum = round(momentum, 2),
+      early_warning_4pct = trigger_4pct(general_variance)
+    ),
+    structural_intelligence = list(
+      source_of_variance_score = round(source_variance, 2), liability_score = round(liability, 2),
+      reporting_integrity_score = round(integrity, 2), reason_of_doubt_score = round(doubt, 2),
+      negotiator_risk_score = round(negotiator, 2), root_cause_pattern = cause
+    ),
+    settlement_intelligence = list(
+      settlement_percentage = round(settlement_percentage, 2), settlement_achievement = round(achievement, 2),
+      settlement_efficiency = round(efficiency, 2), settlement_risk = round(settlement_risk_score, 2),
+      settlement_variance_trigger = settlement_variance_trigger
+    ),
+    escalation_intelligence = list(
+      legal_action = legal_action(legal_exists), litigation_risk = round(litigation, 2),
+      double_trigger_multiplier = double_multiplier, triple_trigger_multiplier = triple_multiplier,
+      active_trigger_multiplier = active_multiplier, fraud_risk_indicator = round(fraud_risk, 2)
+    ),
+    post_settlement_intelligence = list(
+      broken_settlement = broken, broken_settlement_score = ifelse(broken, 100, 0),
+      income_variance = round(post_income_variance, 2), expense_variance = round(post_expense_variance, 2),
+      escalation_multiplier = broken_multiplier
+    ),
+    governance = list(financial_integrity_index = round(fii, 2), priority = priority),
+    interpretation = list(
+      evidence_status = "Controlled prototype output",
+      primary_finding = "The portfolio segment contains a reported-versus-verified financial variance pattern requiring further valuation review.",
+      caution = "This result is an investigative indicator. It does not establish fraud, legal liability, or guaranteed recoverable portfolio value."
+    )
+  )
+
+  class(result) <- c("mj23r2_result", "list")
+  result
+}
+
+print.mj23r2_result <- function(x, ...) {
+  cat("\nMJ Debt Portfolio Valuation\n")
+  cat("Technical designation:", x$technical_designation, "\n")
+  cat("Investigation:", x$investigation_id, "\n")
+  cat("----------------------------------------\n")
+  cat("General variance:", x$foundational_signals$general_variance, "%\n")
+  cat("Settlement risk:", x$settlement_intelligence$settlement_risk, "\n")
+  cat("Fraud risk indicator:", x$escalation_intelligence$fraud_risk_indicator, "\n")
+  cat("Financial Integrity Index:", x$governance$financial_integrity_index, "\n")
+  cat("Governance priority:", x$governance$priority, "\n")
+  cat("Root-cause pattern:", x$structural_intelligence$root_cause_pattern, "\n")
+  cat("----------------------------------------\n")
+  cat(x$interpretation$caution, "\n\n")
+  invisible(x)
+}
+
+mj_demo_input <- list(
+  investigation_id = "MJ-DEMO-001",
+  investigation_level = "portfolio_segment",
+  reporting = list(
+    reported_income = 120000000, verified_income = 150000000,
+    reported_expenses = 85000000, verified_expenses = 60000000,
+    incorrect_submissions = 3800, total_submissions = 10000, successful_submissions = 6200
+  ),
+  trends = list(
+    previous_variance = 12, current_variance = 24,
+    variance_period_1 = 8, variance_period_2 = 15, variance_period_3 = 24,
+    previous_incidence = 21, current_incidence = 38
+  ),
+  controls = list(
+    accuracy_score = 68, compliance_score = 74, remediation_score = 52,
+    exception_score = 61, delay_score = 45, deviation_score = 58
+  ),
+  settlement = list(
+    original_debt = 2000000000, settlement_amount = 200000000,
+    settled_cases = 4200, flagged_cases = 10000,
+    settlement_backlog_score = 58, settlement_closed = TRUE
+  ),
+  legal = list(legal_action_exists = TRUE, reopened = TRUE, disputed = TRUE, legal_reversal = FALSE),
+  post_settlement = list(
+    reported_income = 120000000, verified_income = 150000000,
+    reported_expenses = 85000000, verified_expenses = 60000000
+  )
+)
+
+# Run with:
+# mj_demo_result <- mj23r2_run(mj_demo_input)
+# print(mj_demo_result)
